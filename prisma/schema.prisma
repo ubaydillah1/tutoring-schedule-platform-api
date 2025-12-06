@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+//
+// ADMIN USER
+//
+model Admin {
+  id       String @id @default(uuid())
+  email    String @unique
+  password String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//
+// CLASS (ex: 9A, 9B, 10A…)
+//
+model Class {
+  id   String @id @default(uuid())
+  name String @unique
+
+  students Registration[]
+}
+
+//
+// SUBJECT (Math, Science…)
+//
+model Subject {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  description String?
+
+  sessions SessionSubject[]
+}
+
+//
+// TUTOR
+// (admin assigns which tutor teaches in which schedule)
+//
+model Tutor {
+  id          String  @id @default(uuid())
+  name        String
+  phoneNumber String?
+
+  sessions TutorSession[]
+}
+
+//
+// SESSION TIME SLOT
+// ex: Sesi 1: 10.00–11.00, Sesi 2: 13.00–14.30, etc
+//
+model SessionInstance {
+  id        String   @id @default(uuid())
+  date      DateTime
+  slotName  String // contoh: "Sesi 2"
+  startTime String
+  endTime   String
+
+  tutors   TutorSession[]
+  subjects SessionSubject[]
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  registrations Registration[]
+}
+
+//
+// PIVOT TABLE: Session <-> Tutor
+//
+model TutorSession {
+  id        String   @id @default(uuid())
+  sessionId String // dari tabel Session
+  date      DateTime
+  tutorId   String
+
+  tutor   Tutor           @relation(fields: [tutorId], references: [id])
+  session SessionInstance @relation(fields: [sessionId], references: [id])
+
+  @@unique([sessionId, date, tutorId])
+}
+
+//
+// PIVOT TABLE: Session <-> Subject
+//
+model SessionSubject {
+  id        String   @id @default(uuid())
+  sessionId String
+  date      DateTime
+  subjectId String
+
+  subject Subject         @relation(fields: [subjectId], references: [id])
+  session SessionInstance @relation(fields: [sessionId], references: [id])
+
+  @@unique([sessionId, date, subjectId])
+}
+
+//
+// STUDENT REGISTRATION (no login required)
+//
+model Registration {
+  id String @id @default(uuid())
+
+  name   String
+  materi String?
+  date   DateTime
+
+  classId   String
+  sessionId String // simple string, NO FK
+
+  class Class @relation(fields: [classId], references: [id])
+
+  createdAt DateTime        @default(now())
+  session   SessionInstance @relation(fields: [sessionId], references: [id])
+}
