@@ -8,103 +8,71 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-//
-// ADMIN USER
-//
 model Admin {
-  id       String @id @default(uuid())
-  email    String @unique
-  password String
-
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-//
-// CLASS (ex: 9A, 9B, 10A…)
-//
 model Class {
-  id   String @id @default(uuid())
-  name String @unique
-
+  id       String         @id @default(uuid())
+  name     String         @unique
   students Registration[]
 }
 
-//
-// SUBJECT (Math, Science…)
-//
 model Subject {
-  id          String  @id @default(uuid())
-  name        String  @unique
+  id          String           @id @default(uuid())
+  name        String           @unique
   description String?
-
-  sessions SessionSubject[]
+  sessions    SessionSubject[]
 }
 
-//
-// TUTOR
-// (admin assigns which tutor teaches in which schedule)
-//
 model Tutor {
-  id          String  @id @default(uuid())
+  id          String         @id @default(uuid())
   name        String
   phoneNumber String?
-
-  sessions TutorSession[]
+  sessions    TutorSession[]
 }
 
-//
-// SESSION TIME SLOT
-// ex: Sesi 1: 10.00–11.00, Sesi 2: 13.00–14.30, etc
-//
 model SessionInstance {
-  id        String   @id @default(uuid())
-  date      DateTime
-  slotName  String // contoh: "Sesi 2"
-  startTime String
-  endTime   String
-
-  tutors   TutorSession[]
-  subjects SessionSubject[]
-
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  id            String           @id @default(uuid())
+  date          DateTime
+  slotName      String
+  startTime     String
+  endTime       String
+  tutors        TutorSession[]
+  subjects      SessionSubject[]
   registrations Registration[]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 }
 
-//
-// PIVOT TABLE: Session <-> Tutor
-//
 model TutorSession {
   id        String   @id @default(uuid())
-  sessionId String // dari tabel Session
+  sessionId String
   date      DateTime
   tutorId   String
 
-  tutor   Tutor           @relation(fields: [tutorId], references: [id])
-  session SessionInstance @relation(fields: [sessionId], references: [id])
+  tutor   Tutor           @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+  session SessionInstance @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@unique([sessionId, date, tutorId])
 }
 
-//
-// PIVOT TABLE: Session <-> Subject
-//
 model SessionSubject {
   id        String   @id @default(uuid())
   sessionId String
   date      DateTime
   subjectId String
 
-  subject Subject         @relation(fields: [subjectId], references: [id])
-  session SessionInstance @relation(fields: [sessionId], references: [id])
+  subject Subject         @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  session SessionInstance @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@unique([sessionId, date, subjectId])
 }
 
-//
-// STUDENT REGISTRATION (no login required)
-//
 model Registration {
   id String @id @default(uuid())
 
@@ -113,10 +81,10 @@ model Registration {
   date   DateTime
 
   classId   String
-  sessionId String // simple string, NO FK
+  sessionId String
 
-  class Class @relation(fields: [classId], references: [id])
+  class   Class           @relation(fields: [classId], references: [id], onDelete: Cascade)
+  session SessionInstance @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime        @default(now())
-  session   SessionInstance @relation(fields: [sessionId], references: [id])
+  createdAt DateTime @default(now())
 }
